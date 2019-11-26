@@ -13,11 +13,6 @@ class Pipe(BaseObject):
         if(self.__Data != None):
             result = data + 1;           
         return result
-    
-    @property
-    def Data(self):
-        return self.__Data;
-
 
 
 if(__name__ == "__main__"):
