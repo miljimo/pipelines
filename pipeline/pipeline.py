@@ -8,10 +8,6 @@ PIP_EVENT_INITIAL_STATE    =  0x00;
 PIP_EVENT_PROCESSED_STATE  =  0x01;
 PIP_EVENT_COMPLETED        =  0x02;
 
-
-"""
- 
-"""
 class PipeLine(Pipe):
 
     def __init__(self, **kwargs):        
@@ -28,6 +24,16 @@ class PipeLine(Pipe):
         self.__Pipes  =  list();
         self.__PipeProcessed  =  EventHandler();
         self.__Completed      =  EventHandler();
+        self.__ErrorOccured   =  EventHandler();
+        
+    @property
+    def ErrorOccured(self):
+        return self.__ErrorOccured;
+
+    @ErrorOccured.setter
+    def ErrorOccured(self, handler):
+        if(isinstance(handler, EventHandler)):
+            self.__ErrorOccured  = handler;
       
     @property
     def IsProcessing(self):
@@ -89,32 +95,37 @@ class PipeLine(Pipe):
         return self.__Pipes;
 
     def Process(self, data):
-        if(data != None):
-            result =  None;
-            processing_data  =  copy.deepcopy(data);
-            self.__ReuseList =  list();
-            IsProcessing     = True;
-            
-            while((len(self.Pipes) != 0) and (IsProcessing  == True)):    
-                pipe  =  self.Front;                
-                process_result  =  pipe.Process(processing_data);
-                if(process_result == None):
-                    break;
-                processing_data = process_result;                
-                if(self.__ReusePipe):
-                    self.__ReuseList.append(pipe);
-                self.__Processed(pipe, processing_data);
+        try:
+            if(data != None):
+                result =  None;
+                processing_data  =  copy.deepcopy(data);
+                self.__ReuseList =  list();
+                IsProcessing     = True;
                 
-            if(processing_data  != None):
-                result      = processing_data ;                
-            self.__Pipes    = self.__ReuseList;
-            self.__ProcessCompletedEvent(result);
-            
+                while((len(self.Pipes) != 0) and (IsProcessing  == True)):    
+                    pipe  =  self.Front;                
+                    process_result  =  pipe.Process(processing_data);
+                    if(process_result == None):
+                        break;
+                    processing_data = process_result;                
+                    if(self.__ReusePipe):
+                        self.__ReuseList.append(pipe);
+                    self.__Processed(pipe, processing_data);
+                    
+                if(processing_data  != None):
+                    result      = processing_data ;                
+                self.__Pipes    = self.__ReuseList;
+                self.__ProcessCompletedEvent(result);
+        except Exception as err:
+            if(self.ErrorOccured != None):
+                self.ErrorOccured(ErrorEvent("@Processing: ", err));
+            else:
+                raise err;
+           
     def __ProcessCompletedEvent(self, result):
         if(isinstance(self.Completed, EventHandler)):
             self.Completed(PipeEvent(self, result,PIP_EVENT_COMPLETED ));
             
-
     def __Processed(self, pipe,  result):
         if(self.PipeProcessed != None):           
             event  =  PipeEvent(pipe, result, PIP_EVENT_PROCESSED_STATE);
