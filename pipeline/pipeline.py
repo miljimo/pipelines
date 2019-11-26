@@ -4,24 +4,31 @@ from events         import Event , BaseObject , EventHandler;
 from pipeevent      import PipeEvent;
 from pipe           import Pipe;
 
-PIP_EVENT_INITIAL_STATE    = 0x00;
+PIP_EVENT_INITIAL_STATE    =  0x00;
 PIP_EVENT_PROCESSED_STATE  =  0x01;
-    
-class PipeLine(BaseObject):
+PIP_EVENT_COMPLETED        =  0x02;
 
-    def __init__(self, **kwargs):
+
+"""
+ 
+"""
+class PipeLine(Pipe):
+
+    def __init__(self, **kwargs):        
         self.__ReusePipe     = False;
         self.__IsProcessing =  False;
         #inputs
         reuse_pipes = kwargs['keep_pipes'] if('keep_pipes' in kwargs) else False;
-        self.Name   = kwargs['name'] if(('name' in kwargs) and (type(kwargs['name']) == str)) else "pipeline";
+        name   = kwargs['name'] if(('name' in kwargs) and (type(kwargs['name']) == str)) else "pipeline";
+        super().__init__(name); # Call the parent constructor
         
         if(type(reuse_pipes) == bool):
             self.__ReusePipe  =  reuse_pipes;
+            
         self.__Pipes  =  list();
         self.__PipeProcessed  =  EventHandler();
-        pass;
-
+        self.__Completed      =  EventHandler();
+      
     @property
     def IsProcessing(self):
         return self.__IsProcessing;
@@ -30,6 +37,17 @@ class PipeLine(BaseObject):
     def IsProcessing(self, status):
         if(type(status)  == bool):
             self.__IsProcessing = status;
+
+    @property
+    def Completed(self):
+        return self.__Completed;
+    """
+        Handle completed events
+    """
+    @Completed.setter
+    def Completed(self, handler):
+        if(isinstance(handler, EventHandler)):
+            self.__Completed =  handler;
     
     @property
     def PipeProcessed(self):
@@ -44,7 +62,6 @@ class PipeLine(BaseObject):
         if(isinstance(pipe, Pipe)!= True):
             raise TypeError("Expecting a pipe object but {0} given".format(type(pipe)));
         if(self.IsExists(pipe)):
-            print("Pipe already exists");
             return ;
         self.Pipes.append(pipe);  
         return self;
@@ -72,8 +89,8 @@ class PipeLine(BaseObject):
         return self.__Pipes;
 
     def Process(self, data):
-        result  =  None;
         if(data != None):
+            result =  None;
             processing_data  =  copy.deepcopy(data);
             self.__ReuseList =  list();
             IsProcessing     = True;
@@ -91,8 +108,12 @@ class PipeLine(BaseObject):
             if(processing_data  != None):
                 result      = processing_data ;                
             self.__Pipes    = self.__ReuseList;
+            self.__ProcessCompletedEvent(result);
             
-        return result;
+    def __ProcessCompletedEvent(self, result):
+        if(isinstance(self.Completed, EventHandler)):
+            self.Completed(PipeEvent(self, result,PIP_EVENT_COMPLETED ));
+            
 
     def __Processed(self, pipe,  result):
         if(self.PipeProcessed != None):           
@@ -103,20 +124,21 @@ class PipeLine(BaseObject):
 if(__name__ =="__main__"):
     class MulPipe(Pipe):
         def Process(self , data):
-            return data * data;
+            return data * 2;
     pipeline  =  PipeLine(keep_pipes  = True);
-    pipeline.Pipe(MulPipe("Placing the order")
-                  ).Pipe(MulPipe("Validating the order")
+    pipeline.Pipe(Pipe("Placing the order")
+                  ).Pipe(Pipe("Validating the order")
                   ).Pipe(Pipe("Processing the order")
                   ).Pipe(MulPipe("Preparing the other re"));
     
     def OnPipeProcessed(event):
          print("Pipe{0} Processing data ={1}".format(event.Pipe.Name, event.Result));
+    def OnCompleted(event):
+        print("Completed  Final result  {0}".format(event.Result));
     pipeline.PipeProcessed += OnPipeProcessed;
+    pipeline.Completed     +=  OnCompleted;
     start  = 1;
-    while(True):
-        time.sleep(2);
-        start =  pipeline.Process(start);
+    start  =  pipeline.Process(start);
 
         
         
