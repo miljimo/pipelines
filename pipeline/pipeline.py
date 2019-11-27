@@ -101,7 +101,6 @@ class PipeLine(Pipe):
                 processing_data  =  copy.deepcopy(data);
                 self.__ReuseList =  list();
                 IsProcessing     = True;
-                
                 while((len(self.Pipes) != 0) and (IsProcessing  == True)):    
                     pipe  =  self.Front;                
                     process_result  =  pipe.Process(processing_data);
@@ -143,9 +142,9 @@ if(__name__ =="__main__"):
                   ).Pipe(MulPipe("Preparing the other re"));
     
     def OnPipeProcessed(event):
-         print("Pipe{0} Processing data ={1}".format(event.Pipe.Name, event.Result));
+         print("Pipe{0}, data ={1}".format(event.Pipe.Name, event.Result));
     def OnCompleted(event):
-        print("Completed  Final result  {0}".format(event.Result));
+        print("Final result  {0}".format(event.Result));
     pipeline.PipeProcessed += OnPipeProcessed;
     pipeline.Completed     +=  OnCompleted;
     start  = 1;
