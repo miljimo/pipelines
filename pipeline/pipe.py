@@ -1,8 +1,10 @@
 from events import EventHandler, Event, BaseObject;
 from threading import Thread, Lock;
 import queue;
+import time;
 
 THREAD_WAIT_TIME  =  100/1000;
+SLEEP_TIME        =  500/1000;
 
 class IdleEvent(Event):
 
@@ -36,18 +38,24 @@ class Pipe(BaseObject):
     def __init__(self, **kwargs):
         super().__init__();
         self.__LinkedPipe = None;
-        name  = kwargs['name'] if('name' in kwargs) else '';
-        link  = kwargs['link'] if('link' in kwargs) else None;
-        if(isinstance(link, Pipe)):
-           self.__LinkedPipe  = link;
-           
-        self.Name                 = name;
+        self.Name  = kwargs['name'] if('name' in kwargs) else 'pipe';
+        self.__AllowConcurrency   = kwargs['concurrency'] if( ('concurrency' in kwargs) and (type(kwargs['concurrency']) == bool)) else False;
+
         self.__ProcessThread      = None;
-        self.__ProcessLockThread  =  Lock();
+        self.__ProcessLockThread  = Lock();
         self.__IsProcessing       = False;
         self.__IdleHandler        = EventHandler();
         self.__ProcessedHandler   = EventHandler();
         self.__Jobs               = Pipe.__JobCollection();
+       
+    @property
+    def AllowConcurrency(self):
+        return self.__AllowConcurrency;
+
+    @AllowConcurrency.setter
+    def AllowConcurrency(self, status):
+        if(type(status) == bool):
+            self.__AllowConcurrency =  status;
 
     @property
     def ProcessedHandler(self):
@@ -91,20 +99,37 @@ class Pipe(BaseObject):
             self.__ProcessThread.daemon = True;
             self.__ProcessThread.start();
             
+            if(self.LinkedPipe != None):
+                self.LinkedPipe.AllowConcurrency  = self.AllowConcurrency;
+                if(self.LinkedPipe.IsProcessing != True):
+                    self.LinkedPipe.Start();
+            
+            
 
     def __ThreadLoop(self):
-        self.__IsProcessing  = True;
-        self.__ProcessLockThread.release();
-        while(self.IsProcessing):
-            #Process job queue
-            if(self.Jobs.IsEmpty != True):                
-                data  = self.Jobs.Front;
-                if(data != None):
-                    self._OnProcess(data);
-            else:
-                # Idle stage for the pipe
-                if(self.IdleHandler != None):
-                    self.IdleHandler(IdleEvent(self));
+        try:
+            self.__IsProcessing  = True;
+            self.__ProcessLockThread.release();
+            while(self.IsProcessing == True):                
+                if(self.Jobs.IsEmpty != True):                
+                    data  = self.Jobs.Front;
+                    if(data != None):
+                        self._OnProcess(data);
+                        # If allow concurrency running then terminate the process after once concurrency.
+                        if(self.AllowConcurrency != True):
+                            self.Stop();
+                            break;
+                            
+                else:                    
+                    if(self.IdleHandler != None):
+                        self.IdleHandler(IdleEvent(self));
+                        time.sleep(SLEEP_TIME);
+                    
+        except Exception as err:
+            self.Stop();
+            raise err;
+        finally:
+            self.__IsProcessing  = False;
                     
     @property
     def IsProcessing(self):
@@ -176,21 +201,17 @@ if(__name__ == "__main__"):
     def OnDataRecieved(e):
         print("Stage 2 ={0}\n".format(e.Data));
         
-    pipe  =  Pipe(name  =  "Simple");
-    pipe2  =  Pipe(name  =  "Simple2");
+    pipe  =  Pipe(name  =  "Simple", concurrency = True);
+    pipe2  =  Pipe(name  =  "Simple2",concurrency = True);
     pipe.ProcessedHandler += OnProcessed;
     pipe.LinkedPipe  = pipe2;
     pipe2.ProcessedHandler +=OnDataRecieved;
     pipe.Start();
-    pipe2.Start();
+   
+    
     Counter = 0;
     while(pipe.IsProcessing):
         pipe.Jobs.Add(Counter);
         Counter +=1;
        
-        if(Counter == 20):
-            print("\nDone\n");
-            pipe.Stop();
-            pipe2.Stop();
-        
 

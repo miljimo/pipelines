@@ -13,8 +13,9 @@ class PipeLine(Pipe):
     def __init__(self, **kwargs):
         self.__Pipes           =  list();
         super().__init__(**kwargs);
-        self.__Completed      =  EventHandler();
-        self.__ErrorOccured   =  EventHandler();
+        self.__Completed        =  EventHandler();
+        self.__ErrorOccured     =  EventHandler();
+       
         
     @property
     def ErrorOccured(self):
@@ -69,8 +70,7 @@ class PipeLine(Pipe):
         if(self.Count > 0):
             self.__LastPipe  =  self.Pipes[self.Count -1];
         for pipe in self.Pipes:
-            pipe.ProcessedHandler +=self.__DataProcessingInProgress
-            pipe.Start();
+            pipe.ProcessedHandler +=self.__DataProcessingInProgress;
         super().Start();
 
     def Stop(self):
@@ -96,12 +96,15 @@ class PipeLine(Pipe):
 if(__name__ =="__main__"):
     def OnHandler(event):
         print(event.Sender.Name);
+    def OnProcessing(event):
+        print(event.Sender.Name);
         
-    pipeline  =  PipeLine(keep_pipes  = True);
+    pipeline  =  PipeLine(concurrency  = True);
     pipeline.Pipe(Pipe(name ="Start Counter"));
     pipeline.Pipe(Pipe(name ="Mulit Counter"));
     pipeline.Pipe(Pipe(name ="Transformer Counter"));
     pipeline.Completed += OnHandler;
+    pipeline.ProcessedHandler +=OnProcessing;
     
     pipeline.Start();
     count  = 10;
@@ -109,6 +112,7 @@ if(__name__ =="__main__"):
         while(pipeline.IsProcessing):
             pipeline.Jobs.Add(count);
             count +=1;
+            
           
             pass;
     except:
