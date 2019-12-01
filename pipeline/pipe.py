@@ -3,8 +3,8 @@ from threading import Thread, Lock;
 import queue;
 import time;
 
-THREAD_WAIT_TIME  =  100/1000;
-SLEEP_TIME        =  500/1000;
+THREAD_WAIT_TIME  =  0.01;
+
 
 class IdleEvent(Event):
 
@@ -129,7 +129,7 @@ class Pipe(BaseObject):
                 else:                    
                     if(self.IdleHandler != None):
                         self.IdleHandler(IdleEvent(self));
-                        time.sleep(SLEEP_TIME);
+                        time.sleep(THREAD_WAIT_TIME);
                     
         except Exception as err:
             self.Stop();
@@ -156,7 +156,9 @@ class Pipe(BaseObject):
         if(self.__ProcessThread != None):
             self.__ProcessThread.join(THREAD_WAIT_TIME);
             self.__ProcessThread   = None;
-
+            if(self.AllowConcurrency == True):
+                if(self.LinkedPipe != None):
+                    self.LinkedPipe.Stop();
         self.__ProcessLockThread.release();
 
     def _OnProcess(self, data):
@@ -219,5 +221,7 @@ if(__name__ == "__main__"):
     while(pipe.IsProcessing):
         pipe.Jobs.Add(Counter);
         Counter +=1;
+
+    time.sleep(1);
        
 

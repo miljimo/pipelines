@@ -73,15 +73,19 @@ class PipeLine(Pipe):
             pipe.ProcessedHandler += self.__DataProcessingInProgress;
         super().Start();
 
-    def Stop(self):       
+    def Stop(self):
         super().Stop();
         if(self.AllowConcurrency == True):
             # We must stop all the pipes
-            self.__StopChildrenPipes();
+            self.__RemoveChildrenHandler();
+            for pipe in self.Pipes:
+                pipe.Stop();
+       
 
-    def __StopChildrenPipes(self):
+    def __RemoveChildrenHandler(self):
         for pipe in self.Pipes:
             pipe.ProcessedHandler -= self.__DataProcessingInProgress;
+            pipe.Stop();
         
     @property
     def Count(self):
@@ -96,11 +100,14 @@ class PipeLine(Pipe):
                 # just mean that we dont need handler after the
                 # last task is processed.
                 if(self.AllowConcurrency != True):
-                     self.__StopChildrenPipes();
+                     self.__RemoveChildrenHandler();
         else:
            if(self.ProcessedHandler != None):
                self.ProcessedHandler(event);
-       
+
+    def Clear(self):
+        self.Stop();
+        self.Pipes.clear();
 
 
 if(__name__ =="__main__"):
@@ -122,12 +129,11 @@ if(__name__ =="__main__"):
         while(pipeline.IsProcessing):
             pipeline.Jobs.Add(count);
             count +=1;
-            
-          
             pass;
     except:
         pipeline.Stop();
         print("Completed");
+    time.sleep(1);
 
         
         
