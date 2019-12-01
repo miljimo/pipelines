@@ -35,10 +35,14 @@ class ProcessingEvent(Event):
 
 class Pipe(BaseObject):
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__();
-        self.__LinkedPipe = None;
-        self.Name  = kwargs['name'] if('name' in kwargs) else 'pipe';
+        if(len(args)>0):
+            if(type(args[0]) == str):
+                self.Name = args[0];
+        else:
+            self.Name             = kwargs['name'] if('name' in kwargs) else '';
+        self.__LinkedPipe         = None;        
         self.__AllowConcurrency   = kwargs['concurrency'] if( ('concurrency' in kwargs) and (type(kwargs['concurrency']) == bool)) else False;
 
         self.__ProcessThread      = None;
@@ -55,6 +59,8 @@ class Pipe(BaseObject):
     @AllowConcurrency.setter
     def AllowConcurrency(self, status):
         if(type(status) == bool):
+            if(self.IsProcessing == True):
+                raise ValueError("Unable to set AllowConcurrency when the Pipe is already running");
             self.__AllowConcurrency =  status;
 
     @property
@@ -197,12 +203,12 @@ class Pipe(BaseObject):
 
 if(__name__ == "__main__"):
     def OnProcessed(event):
-        print("Stage 1 ={0}\n".format(event.Data));
-    def OnDataRecieved(e):
-        print("Stage 2 ={0}\n".format(e.Data));
+        print("Pipe ={0}, Stage 1 ={1}\n".format(event.Sender.Name, event.Data));
+    def OnDataRecieved(event):
+         print("Pipe ={0}, Stage 2 ={1}\n".format(event.Sender.Name, event.Data));
         
-    pipe  =  Pipe(name  =  "Simple", concurrency = True);
-    pipe2  =  Pipe(name  =  "Simple2",concurrency = True);
+    pipe  =  Pipe(name  =  "Simple", concurrency = False);
+    pipe2  =  Pipe(name  =  "Simple2");
     pipe.ProcessedHandler += OnProcessed;
     pipe.LinkedPipe  = pipe2;
     pipe2.ProcessedHandler +=OnDataRecieved;

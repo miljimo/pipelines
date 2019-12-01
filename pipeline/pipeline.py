@@ -11,8 +11,8 @@ PIP_EVENT_COMPLETED        =  0x02;
 class PipeLine(Pipe):
 
     def __init__(self, **kwargs):
-        self.__Pipes           =  list();
         super().__init__(**kwargs);
+        self.__Pipes            =  list();        
         self.__Completed        =  EventHandler();
         self.__ErrorOccured     =  EventHandler();
        
@@ -70,14 +70,18 @@ class PipeLine(Pipe):
         if(self.Count > 0):
             self.__LastPipe  =  self.Pipes[self.Count -1];
         for pipe in self.Pipes:
-            pipe.ProcessedHandler +=self.__DataProcessingInProgress;
+            pipe.ProcessedHandler += self.__DataProcessingInProgress;
         super().Start();
 
-    def Stop(self):
+    def Stop(self):       
+        super().Stop();
+        if(self.AllowConcurrency == True):
+            # We must stop all the pipes
+            self.__StopChildrenPipes();
+
+    def __StopChildrenPipes(self):
         for pipe in self.Pipes:
             pipe.ProcessedHandler -= self.__DataProcessingInProgress;
-            pipe.Stop();
-        super().Stop();
         
     @property
     def Count(self):
@@ -87,6 +91,12 @@ class PipeLine(Pipe):
         if(event.Sender == self.__LastPipe):            
             if(self.Completed != None):
                 self.Completed(event);
+                # Remove all handler when all the task have be done.
+                # Remember if the pipes are not running concurrency there it
+                # just mean that we dont need handler after the
+                # last task is processed.
+                if(self.AllowConcurrency != True):
+                     self.__StopChildrenPipes();
         else:
            if(self.ProcessedHandler != None):
                self.ProcessedHandler(event);
@@ -97,10 +107,10 @@ if(__name__ =="__main__"):
     def OnHandler(event):
         print(event.Sender.Name);
     def OnProcessing(event):
-        print(event.Sender.Name);
+        print("Pipe ={0}, Stage 1 ={1}\n".format(event.Sender.Name, event.Data));
         
-    pipeline  =  PipeLine(concurrency  = True);
-    pipeline.Pipe(Pipe(name ="Start Counter"));
+    pipeline  =  PipeLine(name="PipeLine", concurrency  = False);
+    pipeline.Pipe(Pipe("Start Counter"));
     pipeline.Pipe(Pipe(name ="Mulit Counter"));
     pipeline.Pipe(Pipe(name ="Transformer Counter"));
     pipeline.Completed += OnHandler;
