@@ -1,7 +1,7 @@
-from events import EventHandler, Event, BaseObject;
-from threading import Thread, Lock;
 import queue;
 import time;
+from events import EventHandler, Event, BaseObject;
+from threading import Thread, Lock;
 
 THREAD_WAIT_TIME  =  0.01;
 
@@ -197,9 +197,6 @@ class Pipe(BaseObject):
             self.__Queue.task_done();  
             self.__JobLocker.release();
             return result;
-
-            
-
 
                 
 

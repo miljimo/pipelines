@@ -1,8 +1,8 @@
 import copy;
 import time;
 from events         import Event , BaseObject , EventHandler;
-from pipeevent      import PipeEvent;
-from pipe           import Pipe;
+from pipelines      import PipeEvent, Pipe;
+
 
 PIP_EVENT_INITIAL_STATE    =  0x00;
 PIP_EVENT_PROCESSED_STATE  =  0x01;
