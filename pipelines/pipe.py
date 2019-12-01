@@ -2,6 +2,7 @@ import queue;
 import time;
 from events import EventHandler, Event, BaseObject;
 from threading import Thread, Lock;
+from pipelines.ipipe import IPipe;
 
 THREAD_WAIT_TIME  =  0.01;
 
@@ -33,7 +34,7 @@ class ProcessingEvent(Event):
 
 
 
-class Pipe(BaseObject):
+class Pipe(IPipe):
 
     def __init__(self, *args, **kwargs):
         super().__init__();
