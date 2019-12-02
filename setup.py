@@ -1,10 +1,10 @@
 import setuptools
-long_description = "";
+long_description = "simple test";
 with open("README.md", "r") as fh:
     long_description = fh.read()
     
 setuptools.setup(name ="pipelines-jimobama",
-      version    ="0.1.0",
+      version    ="0.1",
       description="A simple implementation of pipelining.",
       long_description =long_description,
       url="https://github.com/miljimo/pipelines.git",
@@ -20,6 +20,6 @@ setuptools.setup(name ="pipelines-jimobama",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
          
-    ],python_requires='>=3.0');
+    ],python_requires='>=2.0');
 
       

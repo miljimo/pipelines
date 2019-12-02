@@ -1,38 +1,11 @@
 import queue;
 import time;
-from events import EventHandler, Event, BaseObject;
-from threading import Thread, Lock;
-from pipelines.ipipe import IPipe;
+from events             import EventHandler, Event, BaseObject;
+from threading          import Thread, Lock;
+from pipelines.ipipe    import IPipe;
+from pipelines.events   import IdleEvent, ProcessingEvent;
 
 THREAD_WAIT_TIME  =  0.01;
-
-
-class IdleEvent(Event):
-
-    def __init__(self, sender):
-        super().__init__("idle.event");
-        self.__Sender  = sender;
-
-    @property
-    def Sender(self):
-        return self.__Sender;
-
-class ProcessingEvent(Event):
-
-    def __init__(self,sender,  data):
-        super().__init__("processing.event");
-        self.__Data      = data;
-        self.__Sender    = sender;
-
-    @property
-    def Data(self):
-        return self.__Data;
-
-    @property
-    def Sender(self):
-        return self.__Sender;
-
-
 
 class Pipe(IPipe):
 
