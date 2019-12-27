@@ -1,9 +1,6 @@
 
-__version__ ="0.0.1";
-__author__  = "";
+__version__ ="1.0.0";
+__author__  = "Obaro";
 
-from pipelines.ipipe        import IPipe;
-from pipelines.pipeevent    import PipeEvent;
-from pipelines.pipe         import Pipe;
-from pipelines.pipeline     import Pipeline;
+from pipelines.pipeline         import Pipeline,Pipe;
 
